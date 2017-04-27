@@ -55,7 +55,8 @@ Once the `RS` program has been loaded and run on the Electron, the
 application.
 
 `read_touch.oph` is the source file for the `RT` program. This program requires
-the Electron Touch application to be running on a connected Android phone.
+the Electron Touch application to be running on a connected Android phone. This
+can be found in the `tools/android/ElectronTouch` directory.
 
 `keys2bytes.oph` is the source file for the `KB` program. This program sends
 keypress information to a connected desktop machine. To interpret the output
