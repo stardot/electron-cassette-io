@@ -1,0 +1,164 @@
+; Copyright (C) 2017 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+.org $1900
+
+.alias in_data $70
+.alias index   $71
+.alias buffer  $72
+
+lda #0
+sta in_data
+
+lda #0
+sta index       ; number of bytes received
+
+jsr setup_interrupt_routine
+
+lda #22
+jsr $ffee
+lda #4          ; MODE 4
+jsr $ffee
+
+lda #23         ; disable flashing cursor
+jsr $ffee
+lda #1
+jsr $ffee
+ldx #7
+cursor_loop:
+    lda #0
+    jsr $ffee
+    dex
+    bpl cursor_loop
+
+lda #0
+sta $fe06
+
+lda #$e0        ; MODE 4, cassette motor on, cassette input
+sta $fe07
+
+lda #$5c        ; high tone detect, RX Full, RTC, vsync
+sta $fe00
+
+loop:
+    lda index
+    cmp #6
+    bne loop    ; loop until all four values have been received
+
+    lda #0
+    sta index   ; reset the counter
+
+    lda $72
+    cmp #25     ; is this a plot command?
+    beq plot
+
+    lda #0
+    sta in_data ; abort data reading
+    beq loop
+
+    plot:
+    jsr $ffee
+    lda $73
+    jsr $ffee
+    lda $74
+    jsr $ffee
+    lda $75
+    jsr $ffee
+    lda $76
+    jsr $ffee
+    lda $77
+    jsr $ffee
+
+    jmp loop
+
+rts
+
+setup_interrupt_routine:
+
+    sei         ; disable interrupts
+
+    lda $204
+    sta original_irq1v_low
+    lda $205
+    sta original_irq1v_high
+
+    lda #<interrupt_routine
+    sta $204
+    lda #>interrupt_routine
+    sta $205
+
+    cli         ; enable interrupts
+
+    rts
+
+interrupt_routine:
+
+    php
+    pha
+    txa
+    pha
+    tya
+    pha
+
+    lda $fe00
+    tax
+
+    and #$40
+    beq check_rx_interrupt
+
+    ; Handle the high tone detect interrupt.
+
+    lda #$40                ; clear the high tone interrupt
+    sta $fe05
+
+    lda #0
+    sta index               ; reset the byte counter
+
+    ldy #1
+    sty in_data
+    bne interrupt_routine_exit  ; unconditional exit due to ldy flags
+
+    check_rx_interrupt:
+
+    txa
+    and #$10
+    beq interrupt_routine_exit
+
+    ; Handle the RX Full interrupt.
+
+    lda $fe04               ; retrieve a byte from the shift register
+
+    ldy in_data
+    beq interrupt_routine_exit  ; if not reading data then exit
+
+    set_received_flag:
+
+    ldx index
+    sta $72,x               ; store the byte in the input buffer
+    inc index
+
+    interrupt_routine_exit:
+
+    pla
+    tay
+    pla
+    tax
+    pla
+    plp
+    jmp (original_irq1v)
+
+original_irq1v:
+original_irq1v_low:  .byte 0
+original_irq1v_high: .byte 0

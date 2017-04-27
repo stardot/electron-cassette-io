@@ -1,0 +1,172 @@
+; Copyright (C) 2017 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+.org $1900
+
+ldy #0
+delay0:
+
+    ldx #0
+    delay1:
+        dex
+        bne delay1
+
+    dey
+    bne delay0
+
+lda #0
+sta $71         ; in data?
+
+lda #0
+sta $72         ; received byte?
+
+jsr setup_interrupt_routine
+
+lda #22
+jsr $ffee
+lda #2          ; MODE 2
+jsr $ffee
+
+lda #23         ; disable flashing cursor
+jsr $ffee
+lda #1
+jsr $ffee
+ldx #7
+cursor_loop:
+    lda #0
+    jsr $ffee
+    dex
+    bpl cursor_loop
+
+lda #0
+sta $fe06
+
+lda #$d0        ; MODE 2, cassette motor on, cassette input
+sta $fe07
+
+lda #$5c        ; high tone detect, RX Full, RTC, vsync
+sta $fe00
+
+lda #$00
+sta $80
+lda #$30
+sta $81
+
+loop:
+    lda $72
+    beq loop    ; if no byte has been received then loop again
+
+    lda $70
+    ldy #0
+    sta ($80),y
+
+    inc $80
+    bne after_byte
+    inc $81
+
+    after_byte:
+
+    lda #0
+    sta $72     ; clear the flag to avoid writing the character again
+
+    jmp loop
+
+;lda #$32        ; MODE 6, sound generation
+;sta $fe07
+
+rts
+
+setup_interrupt_routine:
+
+    sei         ; disable interrupts
+
+    lda $204
+    sta original_irq1v_low
+    lda $205
+    sta original_irq1v_high
+
+    lda #<interrupt_routine
+    sta $204
+    lda #>interrupt_routine
+    sta $205
+
+    cli         ; enable interrupts
+
+    rts
+
+interrupt_routine:
+
+    php
+    pha
+    txa
+    pha
+    tya
+    pha
+
+    lda $fe00
+    tax
+
+    and #$40
+    beq check_rx_interrupt
+
+    ; Handle the high tone detect interrupt.
+
+    lda #$40                ; clear the high tone interrupt
+    sta $fe05
+
+    ldy $71
+    beq enable_input
+
+    ldy #0
+    sty $71
+    beq interrupt_routine_exit  ; unconditional exit due to ldy flags
+
+    enable_input:
+    ldy #1
+    sty $71
+    bne interrupt_routine_exit  ; unconditional exit due to ldy flags
+
+    check_rx_interrupt:
+
+    txa
+    and #$10
+    beq interrupt_routine_exit
+
+    ; Handle the RX Full interrupt.
+
+    lda $fe04               ; retrieve a byte and store it
+    sta $70
+
+    ldy $71
+    beq interrupt_routine_exit  ; if not reading data then exit
+
+    set_received_flag:
+
+    lda #1                  ; indicate that we received a byte
+    sta $72
+
+    interrupt_routine_exit:
+
+    pla
+    tay
+    pla
+    tax
+    pla
+    plp
+    jmp (original_irq1v)
+
+original_irq1v:
+original_irq1v_low:  .byte 0
+original_irq1v_high: .byte 0
