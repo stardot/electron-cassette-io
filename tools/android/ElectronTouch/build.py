@@ -21,9 +21,15 @@ import os, sys
 
 from Tools import buildhelper
 
+if not os.path.exists("resources/electron_code.dat"):
+    sys.stderr.write("Run the build.py script in the main directory to prepare "
+                     "the resources/electron_code.dat file.\n")
+    sys.exit(1)
+
 app_name = "Electron Touch"
 package_name = "uk.org.boddie.android.electrontouch"
-res_files = {"drawable": {"ic_launcher": "icon.svg"}}
+res_files = {"drawable": {"ic_launcher": "icon.svg"},
+             "raw": {"code": "resources/electron_code.dat"}}
 code_file = "touch.py"
 include_path = "Include"
 layout = None

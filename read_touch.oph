@@ -19,6 +19,14 @@
 .alias index   $71
 .alias buffer  $72
 
+lda #50
+sta $73
+delay:
+    lda #19
+    jsr $fff4
+    dec $73
+    bne delay
+
 lda #0
 sta in_data
 

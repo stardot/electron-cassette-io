@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct, sys
 
+zero_bit = ("\xff" * 9) + ("\x00" * 9)
+one_bit = ("\xff" * 5) + ("\x00" * 4) + ("\xff" * 5) + ("\x00" * 4)
+
 class WAV:
 
     def write(self, file_name, samples):
@@ -75,14 +78,21 @@ def encode(text, zero_bit, one_bit):
     return data
 
 
+def main(text, wav_file_name):
+
+    samples = ("\x80" * 300) # + (one_bit * 300) + encode("\xdc", zero_bit, one_bit)
+    samples += (one_bit * 100)
+    samples += encode(text, zero_bit, one_bit)
+    samples += (one_bit * 100)
+    
+    WAV().write(wav_file_name, samples)
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) != 3:
         sys.stderr.write("Usage: %s <file> <WAV file>\n" % sys.argv[0])
         sys.exit(1)
-    
-    zero_bit = ("\xff" * 9) + ("\x00" * 9)
-    one_bit = ("\xff" * 5) + ("\x00" * 4) + ("\xff" * 5) + ("\x00" * 4)
     
     input_file = sys.argv[1]
     if input_file == "-":
@@ -90,9 +100,6 @@ if __name__ == "__main__":
     else:
         text = open(input_file, "rb").read()
     
-    samples = ("\x80" * 300) # + (one_bit * 300) + encode("\xdc", zero_bit, one_bit)
-    samples += (one_bit * 100)
-    samples += encode(text, zero_bit, one_bit)
-    samples += (one_bit * 100)
+    wav_file_name = sys.argv[2]
     
-    WAV().write(sys.argv[2], samples)
+    main(text, wav_file_name)

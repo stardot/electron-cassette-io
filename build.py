@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, stat, struct, sys
 import UEFfile
+from tools import make_data
 
 version = "0.1"
 
@@ -83,6 +84,12 @@ if __name__ == "__main__":
     # Remove the executable files.
     for name, output, load_address, exec_address in assemble:
         os.remove(output)
+    
+    # Also create a WAV file for use in the Android application.
+    u = UEFfile.UEFfile()
+    block = u.write_block(code_data["RT"], "RT", 0x1900, 0x1900, 0, 1)
+    
+    open("tools/android/ElectronTouch/resources/electron_code.dat", "w").write(block)
     
     # Exit
     sys.exit()

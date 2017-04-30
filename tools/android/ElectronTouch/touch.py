@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from java.io import InputStream
 from java.lang import Byte, Math, Object, Runnable
 from java.nio import ShortBuffer
 from java.util import List
@@ -26,6 +27,8 @@ from android.graphics import Canvas, Paint
 from android.media import AudioFormat, AudioManager, AudioTrack
 from android.os import Bundle, Handler
 from android.view import MotionEvent, View
+
+from app_resources import R
 
 class ViewActivity(Activity):
 
@@ -70,9 +73,13 @@ class DrawView(View):
         self.action = 0
         
         self.handler = Handler()
+        self.first = True
         self.ready = False
         self.data = array(byte, 6)
         self.data[0] = 25
+        
+        resources = context.getResources()
+        self.code = resources.openRawResource(R.raw.code)
     
     @args(void, [int, int, int, int])
     def onSizeChanged(self, width, height, oldWidth, oldHeight):
@@ -89,15 +96,15 @@ class DrawView(View):
         self.paint.setARGB(255, 0, 255, 160)
         canvas.drawPaint(self.paint)
         
-        self.paint.setARGB(255, 0, 0, 160)
-        canvas.drawCircle(self.x, self.y, self.r, self.paint)
+        if not self.first:
+            self.paint.setARGB(255, 0, 0, 160)
+            canvas.drawCircle(self.x, self.y, self.r, self.paint)
     
     @args(bool, [MotionEvent])
     def onTouchEvent(self, event):
     
         self.x = event.getX()
         self.y = event.getY()
-        self.invalidate()
         
         action = event.getAction()
         
@@ -117,15 +124,20 @@ class DrawView(View):
             
             if not self.ready:
             
-                self.player.playHighTone(60)
-                self.player.playData(self.data)
-                self.ready = True
-                self.handler.postDelayed(self, long(50))
+                if self.first:
+                    self.player.sendCode(self.code)
+                    self.first = False
+                else:
+                    self.player.playHighTone(60)
+                    self.player.playData(self.data)
+                    self.ready = True
+                    self.handler.postDelayed(self, long(50))
         
         elif action == MotionEvent.ACTION_UP:
         
             self.pause()
         
+        self.invalidate()
         return True
     
     def pause(self):
@@ -175,7 +187,7 @@ class Player(Object):
         
         # Define a track with a capacity large enough to fit five bytes of
         # encoded data.
-        #         data                         bytes/short
+        #         data (bits)                  bytes per short
         capacity = 60 * self.SAMPLES_PER_BIT * 2
         
         self.track = AudioTrack(AudioManager.STREAM_MUSIC, self.SAMPLE_RATE,
@@ -257,3 +269,20 @@ class Player(Object):
         bytes = shorts * 2
         
         self.track.write(buf.array(), 0, shorts)
+    
+    @args(void, [InputStream])
+    def sendCode(self, stream):
+    
+        self.playHighTone(60)
+        
+        a = array(byte, 6)
+        
+        while True:
+        
+            code = stream.read(a, 0, 6)
+            if code == -1:
+                break
+            
+            self.playData(a)
+        
+        stream.close()
