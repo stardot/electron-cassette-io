@@ -40,11 +40,12 @@ if __name__ == "__main__":
     files = []
     
     # Assemble the code.
-    assemble = [("read_touch.oph", "RT", 0x1900, 0x1900),
-                ("read_bytes.oph", "RB", 0x1900, 0x1900),
-                ("read_screen.oph", "RS", 0x1900, 0x1900),
-                ("keys2bytes.oph", "K2B", 0x1900, 0x1900),
-                ("write_bytes.oph", "WB", 0x1900, 0x1900)
+    assemble = [("terminal.oph", "TERM", 0x1900, 0x1900),
+                #("read_touch.oph", "RT", 0x1900, 0x1900),
+                #("read_bytes.oph", "RB", 0x1900, 0x1900),
+                #("read_screen.oph", "RS", 0x1900, 0x1900),
+                #("keys2bytes.oph", "K2B", 0x1900, 0x1900),
+                #("write_bytes.oph", "WB", 0x1900, 0x1900)
                 ]
     
     code_data = {}
@@ -87,9 +88,11 @@ if __name__ == "__main__":
     
     # Also create a WAV file for use in the Android application.
     u = UEFfile.UEFfile()
-    block = u.write_block(code_data["RT"], "RT", 0x1900, 0x1900, 0, 1)
-    
-    open("tools/android/ElectronTouch/resources/electron_code.dat", "w").write(block)
+    #block = u.write_block(code_data["RT"], "RT", 0x1900, 0x1900, 0, 1)
+    #
+    #open("tools/android/ElectronTouch/resources/electron_code.dat", "wb").write(block)
+    block = u.write_block(code_data["TERM"], "TERM", 0x1900, 0x1900, 0, 1)
+    make_data.main(block, "/tmp/term.wav")
     
     # Exit
     sys.exit()

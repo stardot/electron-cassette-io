@@ -40,8 +40,11 @@ loop:
 
     send_key:
 
+    lda sent
+    bne loop
+
     stx key
-    lda #0
+    lda #2
     sta sent
     
     lda #$34        ; MODE 6, cassette output
@@ -87,18 +90,20 @@ interrupt_routine:
     ; TX Empty
 
     lda sent
-    bne stop_sending
-
-    ldx key
-    stx $fe04
-    lda #1
-    sta sent
-    bne interrupt_routine_exit  ; unconditional branch (lda flags)
-
-    stop_sending:
+    bne send_data
 
     lda #$30        ; MODE 6, cassette input
     sta $fe07
+    bne interrupt_routine_exit  ; unconditional branch (lda flags)
+
+    send_data:
+
+    dec sent
+    cmp #2                      ; value was 2
+    beq interrupt_routine_exit
+
+    ldx key
+    stx $fe04
 
     interrupt_routine_exit:
 
