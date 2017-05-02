@@ -31,19 +31,16 @@ sta $fe07
 
 loop:
 
-    lda #121
-    ldx #0
-    jsr $fff4
-
-    cpx #255
-    beq loop        ; X==255 -> loop again
+    jsr $ffe0
+    bcs loop
 
     send_key:
 
-    lda sent
+    ldx sent
     bne loop
 
-    stx key
+    sta key
+
     lda #2
     sta sent
     
