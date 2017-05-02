@@ -24,10 +24,8 @@ one_bit = ("\xff" * 5) + ("\x00" * 4) + ("\xff" * 5) + ("\x00" * 4)
 
 class WAV:
 
-    def write(self, file_name, samples):
+    def write(self, f, samples):
     
-        f = open(file_name, "wb")
-        
         f.write("RIFF")
         # Write the size of the RIFF file contents.
         f.write(struct.pack("<I", 12 + 16 + 8 + len(samples)))
@@ -50,11 +48,9 @@ class WAV:
         
         # Write the data itself.
         f.write(samples)
-        
-        f.close()
 
 
-def encode(text, zero_bit, one_bit):
+def encode(text):
 
     data = ""
     
@@ -82,10 +78,12 @@ def main(text, wav_file_name):
 
     samples = ("\x80" * 300) # + (one_bit * 300) + encode("\xdc", zero_bit, one_bit)
     samples += (one_bit * 100)
-    samples += encode(text, zero_bit, one_bit)
+    samples += encode(text)
     samples += (one_bit * 100)
     
-    WAV().write(wav_file_name, samples)
+    f = open(wav_file_name, "wb")
+    WAV().write(f, samples)
+    f.close()
 
 
 if __name__ == "__main__":
