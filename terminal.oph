@@ -17,6 +17,9 @@
 
 .alias key $70
 .alias sent $71
+.alias in_data $72
+.alias receiving $73
+.alias buffer $80
 
 .alias high_tone_bit $40
 .alias tx_empty_bit $20
@@ -24,9 +27,18 @@
 
 main:
 
+lda #21
+ldx #0
+jsr $fff4       ; flush the keyboard buffer
+
 lda #229
 ldx #1
 jsr $fff4
+
+lda #0
+sta in_data
+sta sent
+sta receiving
 
 jsr setup_interrupt_routine
 
@@ -43,13 +55,24 @@ loop:
     ldx sent
     bne loop
 
+    cmp #$1b
+    bne store_key
+    lda buffer
+    store_key:
     sta key
 
     lda #2
     sta sent
     
-    lda #$34        ; MODE 6, cassette output
+    lda #0
+    sta receiving
+
+    lda #$34            ; MODE 6, cassette output
     sta $fe07
+
+    lda $25b            ; load the ULA interrupt mask
+    and #$8f            ; clear all cassette interrupts
+    sta $fe00
 
     jmp loop
 
@@ -83,33 +106,89 @@ interrupt_routine:
     pha
     txa
     pha
+    tya
+    pha
 
     lda $fe00
+    tay
+
+    lda receiving
+    bne check_high_tone
+
+    tya
     and #tx_empty_bit
     beq interrupt_routine_exit
 
-    ; TX Empty
+        ; Handle the TX Empty interrupt.
 
-    lda sent
-    bne send_data
+        lda sent
+        bne send_data
 
-    ; Data sent. Switch back to input and wait for a response.
+        ; Data sent. Switch back to input and wait for a response.
 
-    lda #$30        ; MODE 6, cassette input
-    sta $fe07
-    bne interrupt_routine_exit  ; unconditional branch (lda flags)
+        lda #$b0        ; caps lock on, MODE 6, cassette input
+        sta $fe07
 
-    send_data:
+        ldx #0
+        stx $fe06       ; reset the counter
+        stx in_data     ; not in data yet
+        ldx #1
+        stx receiving   ; but expecting data
 
-    dec sent
-    cmp #2                      ; value was 2
+        lda $25b        ; read the ULA interrupt mask
+        and #$df        ; clear the TX Empty bit
+        ora #$50        ; set the high tone and RX Full bits
+        sta $fe00
+
+        bne interrupt_routine_exit  ; unconditional branch (lda flags)
+
+        send_data:
+
+        dec sent
+        cmp #2                      ; value was 2
+        beq interrupt_routine_exit  ; do not send any value, just keep emitting
+                                    ; a high tone
+        ldx key
+        stx $fe04
+        jmp interrupt_routine_exit
+
+    check_high_tone:
+
+    tya
+    and #high_tone_bit
+    beq check_rx_full
+
+        ; Handle the high tone detect interrupt.
+
+        lda #$40                ; clear the high tone interrupt
+        sta $fe05
+
+        ldx #1
+        stx in_data
+        bne interrupt_routine_exit  ; unconditional branch (ldx flags)
+
+    check_rx_full:
+
+    tya
+    and #rx_full_bit
     beq interrupt_routine_exit
 
-    ldx key
-    stx $fe04
+        ; Handle the RX Full interrupt.
+
+        lda $fe04               ; retrieve a byte from the shift register
+
+        ldx in_data
+        beq interrupt_routine_exit  ; if not reading data then exit
+
+        sta buffer
+
+        lda #0
+        sta receiving
 
     interrupt_routine_exit:
 
+    pla
+    tay
     pla
     tax
     pla

@@ -17,7 +17,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import sys
+import subprocess, sys, time
+from make_data import encode, one_bit, WAV
+
+def send_response(value):
+
+    time.sleep(1)
+    samples = (one_bit * 60)
+    samples += encode(chr(value))
+    s = subprocess.Popen(["play", "-q", "-t", "wav", "-"], stdin=subprocess.PIPE,
+        stdout=None, stderr=subprocess.PIPE)
+    WAV().write(s.stdin, samples)
+    WAV().write(open("/tmp/output.wav", "wb"), samples)
+
 
 f = sys.stdin
 
@@ -93,11 +105,13 @@ while True:
             if vc == 8 and after:
                 key = chr(value)
                 if key != last_key:
-                    sys.stdout.write(key)
+                    sys.stdout.write(repr(key))
                     sys.stdout.flush()
                     last_key = key
                 
                 after = False
+                
+                send_response(value)
     
     m = max(abs(b), m)
     c += 1
