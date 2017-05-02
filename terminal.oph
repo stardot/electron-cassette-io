@@ -36,13 +36,7 @@ loop:
     jsr $fff4
 
     cpx #255
-    bne send_key
-
-    ; Stop sending data.
-
-    lda #$30        ; MODE 6, cassette input
-    sta $fe07
-    bne loop        ; unconditional branch (lda flags)
+    beq loop        ; X==255 -> loop again
 
     send_key:
 
@@ -92,8 +86,19 @@ interrupt_routine:
 
     ; TX Empty
 
+    lda sent
+    bne stop_sending
+
     ldx key
     stx $fe04
+    lda #1
+    sta sent
+    bne interrupt_routine_exit  ; unconditional branch (lda flags)
+
+    stop_sending:
+
+    lda #$30        ; MODE 6, cassette input
+    sta $fe07
 
     interrupt_routine_exit:
 
