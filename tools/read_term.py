@@ -19,15 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 
-keys = ("Q345" "\x00" "8" "\x00" "-^" "\x00\x00\x00\x00\x00\x00\x00"
-        "\x00" "WET7I90_" "\x00\x00\x00\x00\x00\x00\x00"
-        "12DR6UOP[" "\x00\x00\x00\x00\x00\x00\x00"
-        "\x00" "AXFYJK@:" "\x00\x00\x00\x00\x00\x00\x00"
-        "\x00" "SCGHNL;]" "\x00\x00\x00\x00\x00\x00\x00"
-        "\x00" "Z VBM,./" "\x00\x00\x00\x00\x00\x00\x00"
-        "\x00\x00\x00\x00\x00\x00\x00\x00" "\\" "\x00\x00\x00\x00\x00\x00\x00")
-
-
 f = sys.stdin
 
 while True:
@@ -48,7 +39,7 @@ vc = 0
 key = ""
 last_key = ""
 quiet = 0
-ready = False
+ready = 0
 after = False
 
 while True:
@@ -59,53 +50,54 @@ while True:
     
         pn = b
         
-        if 9 <= c <= 11:
-            c = 0
-            d = 1
-            if m > 1:
-                dc += 1
-                if dc >= 4:
-                    if in_byte:
-                        if vc < 8:
-                            value = (value >> 1) | 0x80
-                            vc += 1
-                        else:
-                            in_byte = False
-                            after = True
-                            ready = 1
-                    else:
-                        ready += 1
-                    dc = 0
-            m = 0
-        elif 19 <= c <= 21:
-            c = 0
-            d = 0
-            if m > 1:
-                dc += 1
-                if dc >= 2:
-                    value = (value >> 1)
-                    if in_byte:
-                        vc += 1
-                    elif ready >= 10:
-                        in_byte = True
-                        after = False
-                        value = 0
-                        vc = 0
-                    dc = 0
-            m = 0
-        elif c > 21:
-            c = 0
-            m = 0
+        if b > 0:
         
-        if vc == 8 and after:
-            if 16 <= value <= 128:
-                key = keys[value - 16]
+            if 16 <= c <= 22:
+                c = 0
+                d = 1
+                if m > 1:
+                    dc += 1
+                    if dc >= 2:
+                        if in_byte:
+                            if vc < 8:
+                                value = (value >> 1) | 0x80
+                                vc += 1
+                            else:
+                                in_byte = False
+                                after = True
+                                ready = 1
+                        else:
+                            ready += 1
+                        dc = 0
+                m = 0
+            elif 32 <= c <= 44:
+                c = 0
+                d = 0
+                if m > 1:
+                    dc += 1
+                    if dc >= 1:
+                        value = (value >> 1)
+                        if in_byte:
+                            vc += 1
+                        elif ready >= 10:
+                            in_byte = True
+                            after = False
+                            value = 0
+                            vc = 0
+                        dc = 0
+                m = 0
+            elif c > 21:
+                c = 0
+                m = 0
+            
+            if vc == 8 and after:
+                key = chr(value)
                 if key != last_key:
                     sys.stdout.write(key)
                     sys.stdout.flush()
                     last_key = key
-            
-            after = False
+                
+                after = False
     
     m = max(abs(b), m)
     c += 1
@@ -119,4 +111,4 @@ while True:
         last_key = ""
         quiet = 0
     
-    #print "%3i" % b, (b/8)*" ", "*"
+    #print "%3i" % b, (b/8)*" ", "*", c
