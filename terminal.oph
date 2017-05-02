@@ -24,6 +24,10 @@
 
 main:
 
+lda #229
+ldx #1
+jsr $fff4
+
 jsr setup_interrupt_routine
 
 lda #$30        ; MODE 6, cassette input
@@ -88,6 +92,8 @@ interrupt_routine:
 
     lda sent
     bne send_data
+
+    ; Data sent. Switch back to input and wait for a response.
 
     lda #$30        ; MODE 6, cassette input
     sta $fe07
