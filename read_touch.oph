@@ -63,7 +63,7 @@ sta $fe00
 loop:
     lda index
     cmp #6
-    bne loop    ; loop until all four values have been received
+    bne loop    ; loop until all six values have been received
 
     lda #0
     sta index   ; reset the counter
