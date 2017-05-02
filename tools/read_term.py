@@ -48,6 +48,8 @@ vc = 0
 key = ""
 last_key = ""
 quiet = 0
+ready = False
+after = False
 
 while True:
 
@@ -69,6 +71,10 @@ while True:
                             vc += 1
                         else:
                             in_byte = False
+                            after = True
+                            ready = 1
+                    else:
+                        ready += 1
                     dc = 0
             m = 0
         elif 19 <= c <= 21:
@@ -80,8 +86,9 @@ while True:
                     value = (value >> 1)
                     if in_byte:
                         vc += 1
-                    else:
+                    elif ready >= 10:
                         in_byte = True
+                        after = False
                         value = 0
                         vc = 0
                     dc = 0
@@ -90,13 +97,15 @@ while True:
             c = 0
             m = 0
         
-        if vc == 8 and in_byte:
+        if vc == 8 and after:
             if 16 <= value <= 128:
                 key = keys[value - 16]
                 if key != last_key:
                     sys.stdout.write(key)
                     sys.stdout.flush()
                     last_key = key
+            
+            after = False
     
     m = max(abs(b), m)
     c += 1
