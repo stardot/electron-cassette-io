@@ -9,5 +9,11 @@
      viewBox="0 0 100 100">
 
 <rect x="10" y="10" width="50" height="50" stroke="#606060" fill="#115511" stroke-width="2" />
+<path d="M 15,35 C 15,30 19,15 25,15 C 31,15 35,30 35,35 Z" stroke="none" fill="white" />
+<path d="M 15,38 C 15,42 20,47 25,47 C 30,47 35,42 35,38 Z" stroke="none" fill="white" />
+<path d="M 23,45 L 27,45 L 26,49 L 33,50 L 33,52 L 15,49 L 24,49 Z" stroke="none" fill="white" />
 <rect x="40" y="40" width="50" height="50" stroke="white" fill="#3399ff" stroke-width="2" />
+<path d="M 47,69 L 85,60 C 83,55 80,45 65,45 C 55,45 44,54 45,70 C 46,83 60,85 65,85 Q 75,85 85,75" stroke="white" stroke-width="2" fill="none" />
+<!-- <path d="M 75,90 L 65,80 C 55,70 40,60 50,50 C 60,40 70,55 80,65 L 90,75" stroke="white" stroke-width="2" fill="none" />
+<path d="M 55,65 Q 65,65 65,55 Q 58,48 53,53 Q 48,58 55,65" stroke="white" stroke-width="2" fill="none" /> -->
 </svg>

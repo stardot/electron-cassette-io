@@ -32,8 +32,6 @@ from app_resources import R
 
 class ViewActivity(Activity):
 
-    __interfaces__ = [Runnable]
-    
     def __init__(self):
     
         Activity.__init__(self)
