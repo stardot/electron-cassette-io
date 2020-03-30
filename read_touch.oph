@@ -61,6 +61,16 @@ lda #$5c        ; high tone detect, RX Full, RTC, vsync
 sta $fe00
 
 loop:
+    lda #121
+    ldx #0
+    jsr $fff4
+    cpx #112
+    bne read_values
+
+    lda #12
+    jsr $ffee
+
+    read_values:
     lda index
     cmp #6
     bne loop    ; loop until all six values have been received
